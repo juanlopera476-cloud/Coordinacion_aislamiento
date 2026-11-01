@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Coordinación de aislamiento de L.T.</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--tx:#1b1f3a;--mut:#667;--br:#dde1ee;--ac:#1f2370;--ok:#1a7f45;--okb:#dff3e6;--bad:#b3261e;--badb:#fbe3e1;--code:#12142b;--codetx:#e6e8ff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10122a;--card:#1a1d3d;--tx:#e8eaff;--mut:#9aa0cc;--br:#2c3166;--ac:#9aa4ff;--ok:#6fdc9a;--okb:#16382a;--bad:#ff8a80;--badb:#3d1b1b;--code:#0b0c1c}}
+:root[data-theme="dark"]{--bg:#10122a;--card:#1a1d3d;--tx:#e8eaff;--mut:#9aa0cc;--br:#2c3166;--ac:#9aa4ff;--ok:#6fdc9a;--okb:#16382a;--bad:#ff8a80;--badb:#3d1b1b;--code:#0b0c1c}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.45}
+header{background:var(--ac);color:#fff;padding:16px 20px}
+:root[data-theme="dark"] header,:root:not([data-theme="light"]) header{}
+header h1{margin:0;font-size:1.25rem}header p{margin:4px 0 0;font-size:.85rem;opacity:.85}
+main{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:16px;padding:16px;max-width:1200px;margin:auto}
+@media(max-width:820px){main{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--card);border:1px solid var(--br);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+h2{font-size:1rem;margin:0 0 10px;color:var(--ac)}
+label{display:grid;grid-template-columns:1fr 110px;gap:8px;align-items:center;font-size:.85rem;margin:6px 0}
+label small{color:var(--mut);display:block}
+input,select{width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--br);border-radius:6px;background:var(--bg);color:var(--tx);font:inherit}
+.res h3{margin:0 0 8px;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:1rem}
+.badge{padding:3px 10px;border-radius:99px;font-size:.78rem;font-weight:600}
+.ok{background:var(--okb);color:var(--ok)}.bad{background:var(--badb);color:var(--bad)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.85rem}
+td{padding:4px 6px;border-bottom:1px solid var(--br)}td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.big{font-size:1.6rem;font-weight:700}
+input[readonly]{opacity:.6;cursor:not-allowed}
+.kpi{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:8px}.kpi div{font-size:.8rem;color:var(--mut)}
+.tip{font-size:.82rem;color:var(--mut);margin-top:8px}
+pre{background:var(--code);color:var(--codetx);padding:12px;border-radius:8px;overflow-x:auto;font-size:.78rem;margin:8px 0}
+button{background:var(--ac);color:#fff;border:0;border-radius:6px;padding:6px 12px;cursor:pointer;font:inherit;font-size:.82rem}
+:root[data-theme="dark"] button{color:#10122a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button{color:#10122a}}
+details.py{max-width:1200px;margin:0 16px 24px;padding:0}
+@media(min-width:1232px){details.py{margin:0 auto 24px}}
+details.py summary{cursor:pointer;font-weight:600;color:var(--ac)}
+details.py pre{max-height:520px;overflow:auto}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+</style>
+</head>
+<body>
+<header><h1>⚡ Coordinación de aislamiento de L.T.</h1><p>Sobretensiones atmosféricas · Cap. 3 · EPRI / IEEE 1243 · mismo cálculo que <a href="#codigo-python" id="lnkpy" style="color:#fff">coordinacion_aislamiento.py</a> (código Python al final de la página)</p></header>
+<main>
+<section>
+<div class="card"><h2>Torre y línea</h2>
+<label>Tipo de torre<select id="tipo"><option value="conica">Clase 1 · Cónica</option><option value="portico">Clase 2 · Pórtico (2 postes)</option><option value="cintura">Clase 3 · Cintura</option></select></label>
+<label><span>Altura h [m]</span><input id="altura" type="text" inputmode="decimal" value="35,6"></label>
+<label><span>2r de la torre [m] <small id="r2hint">ancho / diámetro</small></span><input id="dos_r" type="text" inputmode="decimal" value="4"></label>
+<label id="sepw" style="display:none"><span>Separación entre postes b [m]</span><input id="sep" type="text" inputmode="decimal" value="6"></label>
+<label><span>Separación cables de guarda b [m]</span><input id="b" type="text" inputmode="decimal" value="12,2"></label>
+<label><span>Z cable de guarda Z_CG [Ω]</span><input id="z_cg" type="text" inputmode="decimal" value="640"></label>
+<label><span>Velocidad O.V. en torre [p.u.]</span><input id="v" type="text" inputmode="decimal" value="0,8"></label>
+</div>
+<div class="card"><h2>Tensiones, aislamiento y rayo</h2>
+<label><span>k1 (V_brazo = k1·V_top)</span><input id="k1" type="text" inputmode="decimal" value="0,75"></label>
+<label><span>k2 (V_fase = k2·V_top)</span><input id="k2" type="text" inputmode="decimal" value="0,3"></label>
+<label><span>Zona <small>solo cambia Ng (y NC)</small></span><select id="fuente"><option value="z1">Z1</option><option value="z2">Z2</option><option value="z3">Z3</option><option value="z4" selected>Z4</option><option value="ng">Otra: ingresar Ng</option><option value="nc">Otra: ingresar NC</option></select></label>
+<label><span>Densidad de descargas Ng [rayos/km²/año]</span><input id="ng" type="text" inputmode="decimal" value="6,69"></label>
+<label><span>Nivel ceráunico NC [días/año] <small id="nchint">T_D = (Ng/0,04)^(1/1,25)</small></span><input id="nc" type="text" inputmode="decimal" value="60"></label>
+<label><span>No. de platos</span><input id="n" type="text" inputmode="numeric" value="14"></label>
+<label><span>Longitud de plato [m]</span><input id="paso" type="text" inputmode="decimal" value="0,146"></label>
+<label><span>Rayo: frente t_cr [µs] (2x50)</span><input id="tcr" type="text" inputmode="decimal" value="2"></label>
+<label><span>% descargas en torre</span><input id="ptor" type="text" inputmode="decimal" value="60"></label>
+<label><span>RPAT [Ω] (separadas por punto y coma)</span><input id="rpat" type="text" value="20; 10"></label>
+<label><span>Modo corriente crítica</span><select id="modo"><option value="diapositivas">Diapositivas</option><option value="consistente">Unidades coherentes</option></select></label>
+</div>
+</section>
+<section>
+<div id="out"></div>
+</section>
+</main>
+<details class="card py" id="codigo-python"><summary>Código Python completo (coordinacion_aislamiento.py)</summary>
+<p class="tip">Es el mismo cálculo de esta página. Descárgalo y ejecútalo con <code>python coordinacion_aislamiento.py</code>.</p>
+<div class="btns"><button id="dlpy" type="button">Descargar .py</button><button id="cppy" type="button">Copiar código</button></div>
+<pre id="pyview"></pre></details>
+<script type="text/plain" id="pycode">"""
+Coordinación de aislamiento de líneas de transmisión ante descargas atmosféricas
+Alta Tensión - Cap. 3 (Idi Amín Isaac Millán, Ph.D. - UPB)
+Metodología EPRI / IEEE 1243 (6 pasos):
+  1. Modelo de la descarga (Z efectiva)
+  2. Tensión crítica de flameo (CFO - VTN)
+  3. Corriente crítica de flameo
+  4. Correlación geometría - parámetros DAT (Ng, sombra eléctrica, NL)
+  5. Probabilidad de corrientes críticas P(I) y P(2I)
+  6. Índice de salidas (fallas/100 km/año)  -> admisible <= 3
+
+Descargas en la torre: 60 %  (corriente crítica I)
+Descargas en el vano : 40 %  (corriente crítica 2I)
+"""
+import math
+import re
+from dataclasses import dataclass, replace
+
+_print = print
+
+
+def print(*args, **kw):  # noqa: A001 - toda la salida se muestra con coma decimal
+    _print(*[re.sub(r"(?<=\d)\.(?=\d)", ",", str(a)) for a in args], **kw)
+
+C_LUZ = 300.0          # velocidad de la luz [m/µs]
+INDICE_ADMISIBLE = 3.0  # fallas/100 km/año
+
+# Zonas de estudio: lo único que cambia entre zonas es la densidad de descargas (Ng) y su NC.
+ZONAS = {
+    "Z1": {"nc": 55.0, "ng": 5.99},
+    "Z2": {"nc": 31.8, "ng": 3.02},
+    "Z3": {"nc": 41.5, "ng": 4.21},
+    "Z4": {"nc": 60.1, "ng": 6.69},
+}
+
+
+# ----------------------------------------------------------------------------
+# Impedancia de torres  (Z_T = f(altura h, ancho/diámetro 2r))
+# Para agregar otro tipo de torre: escribir una función (h, dos_r) -> Z_T [Ω]
+# y registrarla en TORRES.
+# ----------------------------------------------------------------------------
+def z_torre_conica(h, dos_r, sep_postes=None):
+    """Clase 1 - Torre cónica:  Z_T = 30 ln[ 2 (h² + r²) / r² ]"""
+    r = dos_r / 2.0
+    return 30.0 * math.log(2.0 * (h**2 + r**2) / r**2)
+
+
+def z_torre_portico(h, dos_r, sep_postes=None):
+    """
+    Clase 2 - Pórtico / dos postes (2r = diámetro de cada poste, b = separación entre postes):
+        Z_s = 60 ln(h/r) + 90 (r/h) - 60
+        Z_m = 60 ln(h/b) + 90 (b/h) - 60
+        Z_T = (Z_s + Z_m) / 2
+    """
+    if not sep_postes or sep_postes <= 0:
+        raise ValueError("La torre tipo pórtico requiere la separación entre postes b > 0.")
+    r = dos_r / 2.0
+    b = sep_postes
+    z_s = 60.0 * math.log(h / r) + 90.0 * (r / h) - 60.0
+    z_m = 60.0 * math.log(h / b) + 90.0 * (b / h) - 60.0
+    return 0.5 * (z_s + z_m)
+
+
+def z_torre_cintura(h, dos_r, sep_postes=None):
+    """Clase 3 - Torre de cintura (2r = ancho en la cintura):  Z_T = 60 [ ln(√2 · 2h / r) - 1 ]"""
+    r = dos_r / 2.0
+    return 60.0 * (math.log(math.sqrt(2.0) * 2.0 * h / r) - 1.0)
+
+
+# Cada función recibe (h, dos_r, sep_postes) y devuelve Z_T [Ω].
+# Solo "portico" usa sep_postes. Para otra torre: escribir su función y registrarla aquí.
+TORRES = {
+    "conica": z_torre_conica,      # Clase 1
+    "portico": z_torre_portico,    # Clase 2
+    "cintura": z_torre_cintura,    # Clase 3
+}
+
+
+# ----------------------------------------------------------------------------
+# Datos de entrada
+# ----------------------------------------------------------------------------
+@dataclass
+class Entrada:
+    v_onda_pu: float = 0.8      # velocidad de la O.V. en la torre [p.u. de c]
+    z_cg: float = 640.0         # impedancia de los cables de guarda [Ω]
+    k1: float = 0.75            # V_brazo = k1 * V_top
+    k2: float = 0.3             # V_fase  = k2 * V_top
+    nc: float = 60.0            # nivel ceráunico (se usa si ng_dato es None)
+    zona: str = "Z4"            # Z1..Z4 (tabla ZONAS) o None para usar ng_dato / nc
+    ng_dato: float = 6.69       # densidad de descargas Ng [rayos/km²/año]; si se da, NC = (Ng/0,04)^(1/1,25)
+    n_platos: int = 14          # número de platos de la cadena
+    t_frente_us: float = 2.0    # tiempo de frente del rayo (2x50 µs) [µs]
+    altura: float = 35.6        # altura de la torre h [m]
+    dos_r: float = 4.0          # 2r de la torre (ancho/diámetro) [m]
+    sep_postes: float = None    # separación b entre postes [m] (solo torre "portico")
+    b: float = 12.2              # separación entre cables de guarda [m]
+    tipo_torre: str = "conica"
+    paso_plato: float = 0.146   # longitud de cada plato [m] (146 mm)
+    p_torre: float = 0.6        # fracción de descargas en la torre
+    p_vano: float = 0.4         # fracción de descargas en el vano
+    modo: str = "diapositivas"  # ver i_critica()
+
+
+# ----------------------------------------------------------------------------
+# Paso 2: CFO / VTN
+# ----------------------------------------------------------------------------
+def vtn_cadena(n_platos, paso_plato, t_cr_us):
+    """V_TN = (0.4 + 0.71 / t_cr^0.75) * L   [MV, L en m, t_cr en µs] -> se devuelve en V"""
+    L = n_platos * paso_plato
+    return (0.4 + 0.71 / t_cr_us**0.75) * L * 1e6
+
+
+# ----------------------------------------------------------------------------
+# Paso 1 y 3: impedancias y corriente crítica
+# ----------------------------------------------------------------------------
+def z_efectiva(z_cg, z_t):
+    return (z_cg * z_t) / (z_cg + 2.0 * z_t)
+
+
+def z_omega(z_cg, z_t, rpat):
+    return (2.0 * z_cg**2 * z_t / (z_cg + 2.0 * z_t) ** 2) * ((z_t - rpat) / (z_t + rpat))
+
+
+def psi_amort(z_cg, z_t, rpat):
+    return ((2.0 * z_t - z_cg) / (2.0 * z_t + z_cg)) * ((z_t - rpat) / (z_t + rpat))
+
+
+def tau_torre(h, v_pu):
+    """Tiempo de vuelo de la onda en la torre [s]:  h / (v_pu * c)"""
+    return h / (v_pu * C_LUZ) * 1e-6
+
+
+def i_critica(vtn_V, t_cr_us, zef, zw, psi, tau_s, k1, k2, modo="diapositivas"):
+    """
+    Corriente crítica de flameo [A].
+
+    modo="diapositivas": reproduce exactamente el ejemplo (t_cr en µs como factor
+        y τ en s dentro del corchete, por lo que el término de τ resulta despreciable).
+    modo="consistente": unidades coherentes, el término de τ se pondera con 2τ/t_cr.
+    """
+    a = zef - zw / (1.0 - psi)
+    b = 2.0 * tau_s * zw / (1.0 - psi) ** 2
+    if modo == "diapositivas":
+        den = t_cr_us * (a + b)
+    else:
+        den = a + b / (t_cr_us * 1e-6)
+    if den <= 0:
+        return math.inf   # la cadena nunca llega a flamear con esta configuración
+    return vtn_V / den / (k1 - k2)
+
+
+# ----------------------------------------------------------------------------
+# Paso 4: DAT
+# ----------------------------------------------------------------------------
+def densidad_descargas(nc):
+    return 0.12 * nc                       # rayos/km²/año
+
+
+def sombra_electrica(b, h):
+    return b + 4.0 * h**1.09               # m
+
+
+def nivel_ceraunico_desde_ng(ng):
+    """T_D = (Ng / 0,04)^(1/1,25)   [días tormentosos/año]"""
+    return (ng / 0.04) ** (1.0 / 1.25)
+
+
+def descargas_100km(ng, w):
+    return ng / 10.0 * w                   # rayos/100 km/año
+
+
+# ----------------------------------------------------------------------------
+# Paso 5: probabilidad de que la corriente supere I
+# ----------------------------------------------------------------------------
+def probabilidad(i_kA):
+    if math.isinf(i_kA):
+        return 0.0
+    if i_kA < 20.0:
+        return 1.0 / (1.0 + (i_kA / 52.24) ** 1.436)
+    return 1.0 / (1.0 + (i_kA / 31.0) ** 2.6)
+
+
+# ----------------------------------------------------------------------------
+# Cálculo completo para una RPAT
+# ----------------------------------------------------------------------------
+def calcular(e: Entrada, rpat: float) -> dict:
+    z_t = TORRES[e.tipo_torre](e.altura, e.dos_r, e.sep_postes)
+    zef = z_efectiva(e.z_cg, z_t)
+    zw = z_omega(e.z_cg, z_t, rpat)
+    psi = psi_amort(e.z_cg, z_t, rpat)
+    tau = tau_torre(e.altura, e.v_onda_pu)
+
+    vtn = vtn_cadena(e.n_platos, e.paso_plato, e.t_frente_us)
+    ic = i_critica(vtn, e.t_frente_us, zef, zw, psi, tau, e.k1, e.k2, e.modo)
+    ic_kA = ic / 1e3
+    ic2_kA = 2.0 * ic_kA            # descargas en el vano: se necesita 2I
+
+    if e.zona in ZONAS:
+        ng = ZONAS[e.zona]["ng"]
+        nc = ZONAS[e.zona]["nc"]
+    elif e.ng_dato is not None:
+        ng = e.ng_dato
+        nc = nivel_ceraunico_desde_ng(ng)
+    else:
+        nc = e.nc
+        ng = densidad_descargas(nc)
+    w = sombra_electrica(e.b, e.altura)
+    nl = descargas_100km(ng, w)
+
+    p1 = probabilidad(ic_kA)
+    p2 = probabilidad(ic2_kA)
+    indice = nl * p1 * e.p_torre + nl * p2 * e.p_vano
+
+    return dict(rpat=rpat, z_t=z_t, z_ef=zef, z_omega=zw, psi=psi, tau_us=tau * 1e6,
+                L=e.n_platos * e.paso_plato, vtn_MV=vtn / 1e6,
+                ic_kA=ic_kA, ic2_kA=ic2_kA, ng=ng, nc=nc, w=w, nl=nl,
+                p_torre=p1, p_vano=p2,
+                indice_torre=nl * p1 * e.p_torre, indice_vano=nl * p2 * e.p_vano,
+                indice=indice, admisible=indice <= INDICE_ADMISIBLE)
+
+
+def comparar_zonas(e: Entrada, rpats):
+    """Índice de salidas de cada zona (Z1..Z4) para cada RPAT, con el resto de datos iguales."""
+    print(f"\n{'=' * 62}\n  COMPARACIÓN POR ZONAS · índice de salidas (fallas/100km/año)\n{'=' * 62}")
+    print("  Zona     NC      Ng  " + "".join(f"RPAT {rp:g} Ω".rjust(14) for rp in rpats))
+    for z, d in ZONAS.items():
+        celdas = ""
+        for rp in rpats:
+            r = calcular(replace(e, zona=z), rp)
+            celdas += f"{r['indice']:.2f}{'*' if not r['admisible'] else ' '}".rjust(14)
+        print(f"  {z:<5} {d['nc']:>6} {d['ng']:>7}  {celdas}")
+    print("  (* = no admisible, índice > 3)")
+
+
+def recomendar_platos(e: Entrada, rpat: float, n_max: int = 28):
+    """Número mínimo de platos (con la RPAT dada) que cumple índice <= 3, o None."""
+    for n in range(e.n_platos, n_max + 1):
+        r = calcular(replace(e, n_platos=n), rpat)
+        if r["admisible"]:
+            return n, r
+    return None
+
+
+# ----------------------------------------------------------------------------
+# Presentación
+# ----------------------------------------------------------------------------
+def imprimir(r: dict, e: Entrada):
+    print(f"\n{'=' * 62}\n  RPAT = {r['rpat']:g} Ω\n{'=' * 62}")
+    if e.zona in ZONAS:
+        print(f"  Zona                      = {e.zona}")
+    print(f"  Z_T (torre {e.tipo_torre})        = {r['z_t']:.2f} Ω")
+    print(f"  Z_efectiva                = {r['z_ef']:.2f} Ω")
+    print(f"  Z_ω                       = {r['z_omega']:.2f} Ω")
+    print(f"  ψ                         = {r['psi']:.4f}")
+    print(f"  τ                         = {r['tau_us']:.4f} µs")
+    print(f"  L cadena ({e.n_platos} platos)      = {r['L']:.3f} m")
+    print(f"  V_TN (CFO)                = {r['vtn_MV']:.3f} MV")
+    print(f"  I crítica (torre)         = {r['ic_kA']:.2f} kA")
+    print(f"  2·I crítica (vano)        = {r['ic2_kA']:.2f} kA")
+    print(f"  Ng                        = {r['ng']:.2f} rayos/km²/año")
+    print(f"  Nivel ceráunico NC        = {r['nc']:.1f} días tormentosos/año")
+    print(f"  Sombra eléctrica W        = {r['w']:.2f} m")
+    print(f"  NL                        = {r['nl']:.2f} rayos/100km/año")
+    print(f"  P(I > Icrit)   [torre]    = {r['p_torre']:.4f}")
+    print(f"  P(I > 2·Icrit) [vano]     = {r['p_vano']:.4f}")
+    print(f"  Salidas torre ({e.p_torre:.0%})      = {r['indice_torre']:.2f}")
+    print(f"  Salidas vano  ({e.p_vano:.0%})      = {r['indice_vano']:.2f}")
+    print(f"  ÍNDICE DE SALIDAS         = {r['indice']:.2f} fallas/100km/año")
+    print("  ->", "ADMISIBLE (<= 3)" if r["admisible"] else "NO ADMISIBLE (> 3): requiere medidas remediales")
+
+
+def _pedir(txt, default, cast=float):
+    d = re.sub(r"(?<=\d)\.(?=\d)", ",", str(default))   # se muestra con coma
+    s = input(f"  {txt} [{d}]: ").strip()
+    if not s:
+        return default
+    return cast(s) if cast is str else cast(s.replace(",", "."))   # se acepta coma o punto
+
+
+def main():
+    print("COORDINACIÓN DE AISLAMIENTO DE L.T. (Enter = valor del ejemplo)\n")
+    print("Torres disponibles:", ", ".join(TORRES))
+    e = Entrada()
+    e.tipo_torre = _pedir("Tipo de torre", e.tipo_torre, str)
+    e.altura = _pedir("Altura de la torre h [m]", e.altura)
+    e.dos_r = _pedir("2r de la torre [m]", e.dos_r)
+    if e.tipo_torre == "portico":
+        e.sep_postes = _pedir("Separación entre postes b [m]", 6.0)
+    e.v_onda_pu = _pedir("Velocidad de la O.V. en la torre [p.u. de c]", e.v_onda_pu)
+    e.z_cg = _pedir("Impedancia del cable de guarda Z_CG [Ω]", e.z_cg)
+    e.k1 = _pedir("k1 (V_brazo = k1·V_top)", e.k1)
+    e.k2 = _pedir("k2 (V_fase  = k2·V_top)", e.k2)
+    zona = _pedir("Zona (" + ", ".join(ZONAS) + ") u 'otra' para ingresar Ng/NC", "Z4", str).upper()
+    if zona in ZONAS:
+        e.zona = zona
+    else:
+        e.zona = None
+        fuente = _pedir("Dato conocido: densidad de descargas (ng) o nivel ceráunico (nc)", "ng", str).lower()
+        if fuente == "ng":
+            e.ng_dato = _pedir("Densidad de descargas Ng [rayos/km²/año]", 6.69)
+        else:
+            e.ng_dato = None
+            e.nc = _pedir("Nivel ceráunico NC", e.nc)
+    e.n_platos = _pedir("Número de platos", e.n_platos, int)
+    e.paso_plato = _pedir("Longitud de cada plato [m]", e.paso_plato)
+    e.t_frente_us = _pedir("Rayo: tiempo de frente (2x50 µs) [µs]", e.t_frente_us)
+    e.b = _pedir("Separación entre cables de guarda b [m]", e.b)
+    rpats = [float(x.replace(",", ".")) for x in _pedir("RPAT a evaluar [Ω], separadas por punto y coma", "20;10", str).split(";")]
+
+    resultados = []
+    for rp in rpats:
+        r = calcular(e, rp)
+        imprimir(r, e)
+        resultados.append(r)
+        if not r["admisible"]:
+            rec = recomendar_platos(e, rp)
+            if rec:
+                print(f"  Sugerencia: con {rec[0]} platos el índice baja a {rec[1]['indice']:.2f}")
+            else:
+                print("  Sugerencia: aumentar platos no basta; reducir RPAT o instalar DPS en paralelo.")
+    comparar_zonas(e, rpats)
+    return resultados
+
+
+if __name__ == "__main__":
+    main()
+</script>
+
+<script>
+const $=id=>document.getElementById(id), C=300, ADM=3;
+const TORRES={
+ conica:(h,d)=>{const r=d/2;return 30*Math.log(2*(h*h+r*r)/(r*r));},
+ portico:(h,d,b)=>{const r=d/2,zs=60*Math.log(h/r)+90*(r/h)-60,zm=60*Math.log(h/b)+90*(b/h)-60;return (zs+zm)/2;},
+ cintura:(h,d)=>{const r=d/2;return 60*(Math.log(Math.SQRT2*2*h/r)-1);}};
+const ZONAS={z1:{nc:55,ng:5.99},z2:{nc:31.8,ng:3.02},z3:{nc:41.5,ng:4.21},z4:{nc:60.1,ng:6.69}};
+const zef=(zc,zt)=>zc*zt/(zc+2*zt);
+const zom=(zc,zt,R)=>2*zc*zc*zt/Math.pow(zc+2*zt,2)*((zt-R)/(zt+R));
+const psiF=(zc,zt,R)=>(2*zt-zc)/(2*zt+zc)*((zt-R)/(zt+R));
+const prob=i=>!isFinite(i)?0:(i<20?1/(1+Math.pow(i/52.24,1.436)):1/(1+Math.pow(i/31,2.6)));
+function icrit(V,t,ze,zw,ps,tau,k1,k2,modo){
+  const a=ze-zw/(1-ps), b=2*tau*zw/Math.pow(1-ps,2);
+  const den=modo==="diapositivas"?t*(a+b):a+b/(t*1e-6);
+  return den<=0?Infinity:V/den/(k1-k2);}
+function calc(e,R){
+  const zt=TORRES[e.tipo](e.h,e.d,e.sp), ze=zef(e.zc,zt), zw=zom(e.zc,zt,R), ps=psiF(e.zc,zt,R);
+  const tau=e.h/(e.v*C)*1e-6, L=e.n*e.paso, V=(0.4+0.71/Math.pow(e.t,0.75))*L*1e6;
+  const ic=icrit(V,e.t,ze,zw,ps,tau,e.k1,e.k2,e.modo)/1e3, ic2=2*ic;
+  const ng=e.ng, w=e.b+4*Math.pow(e.h,1.09), nl=ng/10*w;
+  const p1=prob(ic), p2=prob(ic2), it=nl*p1*e.pt, iv=nl*p2*(1-e.pt);
+  return {R,zt,ze,zw,ps,tau:tau*1e6,L,V:V/1e6,ic,ic2,ng,w,nl,p1,p2,it,iv,idx:it+iv,ok:it+iv<=ADM};}
+const f=(x,d=2)=>isFinite(x)?x.toFixed(d).replace(".",","):"∞";
+function read(){const g=id=>parseFloat($(id).value.replace(",","."));
+  return {tipo:$("tipo").value,h:g("altura"),d:g("dos_r"),sp:g("sep"),b:g("b"),zc:g("z_cg"),v:g("v"),k1:g("k1"),k2:g("k2"),fuente:$("fuente").value,ng0:g("ng"),nc0:g("nc"),
+   n:Math.round(g("n")),paso:g("paso"),t:g("tcr"),pt:g("ptor")/100,modo:$("modo").value,
+   rp:$("rpat").value.split(/[;\s]+/).map(s=>parseFloat(s.replace(",","."))).filter(x=>!isNaN(x))};}
+function render(){
+  const e=read(); let html="";
+  if(ZONAS[e.fuente]){const z=ZONAS[e.fuente];e.ng=z.ng;e.nc=z.nc;$("ng").value=String(z.ng).replace(".",",");$("nc").value=String(z.nc).replace(".",",");$("nchint").textContent="dato de la zona";}
+  else if(e.fuente==="ng"){e.ng=e.ng0;e.nc=Math.pow(e.ng/0.04,1/1.25);$("nc").value=isFinite(e.nc)?f(e.nc,1):"";$("nchint").textContent="calculado: T_D = (Ng/0,04)^(1/1,25)";}
+  else{e.nc=e.nc0;e.ng=0.12*e.nc;$("ng").value=isFinite(e.ng)?f(e.ng,2):"";$("nchint").textContent="Ng = 0,12·NC";}
+  $("ng").readOnly=e.fuente!=="ng";$("nc").readOnly=e.fuente!=="nc";
+  $("sepw").style.display=e.tipo==="portico"?"grid":"none";
+  $("r2hint").textContent={conica:"ancho en la base",portico:"diámetro de cada poste",cintura:"ancho en la cintura"}[e.tipo];
+  if(e.tipo==="portico"&&!(e.sp>0)){$("out").innerHTML='<div class="card">Ingresa la separación entre postes b &gt; 0.</div>';return;}
+  for(const R of e.rp){
+    const r=calc(e,R); let rec="";
+    if(!r.ok){for(let n=e.n;n<=28;n++){const q=calc({...e,n},R);if(q.ok){rec=`Con <b>${n} platos</b> el índice baja a ${f(q.idx)}.`;break;}}
+      rec=rec||"Ni con 28 platos (máximo de uso común en 500 kV) se cumple: reducir RPAT o instalar DPS en paralelo.";}
+    const rows=[["Z_T (torre)",f(r.zt)+" Ω"],["Z_efectiva",f(r.ze)+" Ω"],["Z_ω",f(r.zw)+" Ω"],["ψ",f(r.ps,4)],["τ",f(r.tau,4)+" µs"],
+      ["L cadena",f(r.L,3)+" m"],["V_TN (CFO)",f(r.V,3)+" MV"],["I crítica (torre)",f(r.ic)+" kA"],["2·I crítica (vano)",f(r.ic2)+" kA"],
+      ["Ng",f(r.ng)+" rayos/km²/año"],["Nivel ceráunico NC",f(e.nc,1)+" días/año"],["Sombra eléctrica W",f(r.w)+" m"],["NL",f(r.nl)+" rayos/100km/año"],
+      ["P(I > Icrit) torre",f(r.p1,4)],["P(I > 2·Icrit) vano",f(r.p2,4)],
+      [`Salidas torre (${f(e.pt*100,0)} %)`,f(r.it)],[`Salidas vano (${f((1-e.pt)*100,0)} %)`,f(r.iv)]]
+      .map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td></tr>`).join("");
+    html+=`<div class="card res"><h3>${ZONAS[e.fuente]?e.fuente.toUpperCase()+" · ":""}RPAT = ${String(R).replace(".",",")} Ω <span class="badge ${r.ok?"ok":"bad"}">${r.ok?"ADMISIBLE (≤ 3)":"NO ADMISIBLE (> 3)"}</span></h3>
+      <div class="kpi"><div>Índice de salidas<br><span class="big">${f(r.idx)}</span> fallas/100km/año</div><div>I crítica<br><span class="big">${f(r.ic)}</span> kA</div></div>
+      <div class="scroll"><table>${rows}</table></div>${rec?`<p class="tip">${rec}</p>`:""}</div>`;}
+  let cmp="";
+  if(e.rp.length){cmp=`<div class="card"><h2>Comparación por zonas · índice de salidas (fallas/100km/año)</h2><div class="scroll"><table><tr><td><b>Zona</b></td><td><b>NC</b></td><td><b>Ng</b></td>${e.rp.map(R=>`<td><b>RPAT ${String(R).replace(".",",")} Ω</b></td>`).join("")}</tr>${Object.entries(ZONAS).map(([k,z])=>`<tr><td>${k.toUpperCase()}</td><td>${String(z.nc).replace(".",",")}</td><td>${String(z.ng).replace(".",",")}</td>${e.rp.map(R=>{const q=calc({...e,ng:z.ng},R);return `<td style="color:${q.ok?"var(--ok)":"var(--bad)"}">${f(q.idx)}</td>`;}).join("")}</tr>`).join("")}</table></div><p class="tip">Verde: ≤ 3 (admisible) · Rojo: &gt; 3. Solo cambia la densidad de descargas; el resto de datos es el de la izquierda.</p></div>`;}
+  $("out").innerHTML=(html||'<div class="card">Ingresa al menos una RPAT.</div>')+cmp;
+}
+document.querySelectorAll("input,select").forEach(el=>el.addEventListener("input",render));
+render();
+
+(function(){
+  const code=document.getElementById("pycode").textContent.replace(/^\n/,"");
+  document.getElementById("pyview").textContent=code;
+  const d=document.getElementById("codigo-python");
+  document.getElementById("lnkpy").addEventListener("click",()=>{d.open=true;});
+  document.getElementById("dlpy").addEventListener("click",()=>{
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([code],{type:"text/x-python;charset=utf-8"}));
+    a.download="coordinacion_aislamiento.py";document.body.appendChild(a);a.click();a.remove();
+  });
+  const cp=document.getElementById("cppy");
+  cp.addEventListener("click",async()=>{
+    try{await navigator.clipboard.writeText(code);cp.textContent="¡Copiado!";}
+    catch(_){const r=document.createRange();r.selectNodeContents(document.getElementById("pyview"));const s=getSelection();s.removeAllRanges();s.addRange(r);cp.textContent="Seleccionado: Ctrl+C";}
+    setTimeout(()=>cp.textContent="Copiar código",2000);
+  });
+})();
+</script>
+</body>
+</html>
